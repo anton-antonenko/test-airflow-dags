@@ -24,7 +24,7 @@ for k in config:
     print_task = PythonOperator(
         task_id='print_the_context',
         python_callable=print_context,
-        op_kwargs={'dag_id': dag_id, 'db': config[k]['database']},
+        op_kwargs={'dag__id': dag_id, 'db': config[k]['database']},
         dag=dag,
     )
 
