@@ -22,7 +22,7 @@ class TestDagIntegrity(unittest.TestCase):
             desc = dag.default_args.get('description', '')
             msg = 'Description not set for DAG {id}'.format(id=dag_id)
             if desc != '':
-                self.assertIn('A simple test DAG {}'.format(dag_id), desc, msg)
+                self.assertTrue("DAG" in desc, msg)
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestDagIntegrity)
