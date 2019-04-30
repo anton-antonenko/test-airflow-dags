@@ -4,11 +4,16 @@ from datetime import timedelta
 from airflow import DAG, AirflowException
 from airflow.contrib.hooks.ssh_hook import SSHHook
 from airflow.contrib.operators.ssh_operator import SSHOperator
+from airflow.models import Variable
 from airflow.operators.email_operator import EmailOperator
 from airflow.sensors.base_sensor_operator import BaseSensorOperator
 from airflow.sensors.http_sensor import HttpSensor
 
-ssh_hook = SSHHook(remote_host='', username='', password='')
+dag_variables = Variable.get('my_dag_variables', deserialize_json=True)
+remote_host = dag_variables['ssh_hook']['remote_host']
+username = dag_variables['ssh_hook']['username']
+password = dag_variables['ssh_hook']['password']
+ssh_hook = SSHHook(remote_host=remote_host, username=username, password=password)
 
 
 class SSHFileSensorOperator(BaseSensorOperator):
@@ -129,14 +134,14 @@ default_args = {'retries': 3, 'retry_delay': timedelta(seconds=10)}
 
 with DAG(dag_id='My_dag', schedule_interval=None, start_date=datetime(2019, 3, 31), default_args=default_args,
          description='A simple test DAG') as dag:
-    filepath = '/test/test.csv'
+    filepath = dag_variables['filepath']
 
     file_sensor = SSHFileSensorOperator(task_id='sensor', filepath=filepath, poke_interval=10, timeout=30, ds='{{ ds }}')
 
     empty_check = EmptyFileCheckOperator(task_id='empty_file_check', filepath=filepath, timeout=10)
 
-    ssh_task = SparkJobOperator(class_name='com.gd.Runner',
-                                jar_path='spark-assembly-0.1.jar',
+    ssh_task = SparkJobOperator(class_name=dag_variables['spark_params']['class_name'],
+                                jar_path=dag_variables['spark_params']['jar_path'],
                                 task_id='run_job', timeout=300)
 
     test_operator = HBaseTestOperator(task_id="test_metadata", http_conn_id='simple_http', endpoint='/',
